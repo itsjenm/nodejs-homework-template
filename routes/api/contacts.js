@@ -10,7 +10,9 @@ const router = express.Router();
 
 router.get('/', ctrlWrapper(ctrl.getAllContacts));
 
+// @ POST /api/contacts
 
+router.post('/', ctrlWrapper(ctrl.addContact)); 
 
 // router.get('/', async (req, res, next) => {
 //   res.json({ message: 'template message' })
@@ -18,25 +20,20 @@ router.get('/', ctrlWrapper(ctrl.getAllContacts));
 
 // @ GET /api/contacts/:id
 
-router.get('/:contactId', async (req, res, next) => {
+router.get('/:id', async (req, res, next) => {
   res.json({ message: 'template message' })
 })
 
-// @ POST /api/contacts
-
-router.post('/', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
 
 // @ DELETE /api/contacts/:id
 
-router.delete('/:contactId', async (req, res, next) => {
+router.delete('/:id', async (req, res, next) => {
   res.json({ message: 'template message' })
 })
 
 // @ PUT /api/contacts/:id
 
-router.put('/:contactId', async (req, res, next) => {
+router.put('/:id', async (req, res, next) => {
   res.json({ message: 'template message' })
 })
 

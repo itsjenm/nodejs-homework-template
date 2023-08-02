@@ -6,7 +6,7 @@ const getAllContacts = async (req, res, next) => {
         status: 'success',
         code: 200,
         data: {
-            results: contacts,
+            result: contacts,
         },
     });
 };
