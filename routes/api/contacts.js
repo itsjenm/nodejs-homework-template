@@ -14,15 +14,10 @@ router.get('/', ctrlWrapper(ctrl.getAllContacts));
 
 router.post('/', ctrlWrapper(ctrl.addContact)); 
 
-// router.get('/', async (req, res, next) => {
-//   res.json({ message: 'template message' })
-// })
 
 // @ GET /api/contacts/:id
 
-router.get('/:id', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
+router.get('/:id', ctrlWrapper(ctrl.getContactById));
 
 
 // @ DELETE /api/contacts/:id
