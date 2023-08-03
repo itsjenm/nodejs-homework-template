@@ -50,7 +50,7 @@ const updateContact = async (id, body) => {
   data = JSON.parse(data);
   // finds the contact to update
   const contactId = data.findIndex(item => item.id === id);
-  // creates a new contact object by spreading the id, and adding the new info
+  // updates the contact object by spreading the prev id, and adding the new info
   data[contactId] = {...data[contactId], name, email, phone }; 
   // writes the updated contact back to the contacts.json file 
   await fs.writeFile(filePath, JSON.stringify(data));
