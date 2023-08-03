@@ -6,7 +6,7 @@ const getAllContacts = async () => {
         return data;
     } catch (error) {
         console.log(error.message);
-        throw error;
+        throw error.message;
     }
 }
 

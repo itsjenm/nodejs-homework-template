@@ -41,7 +41,22 @@ const addContact = async (body) => {
    return newContact; 
 }
 
-// const updateContact = async (contactId, body) => {}
+const updateContact = async (id, body) => {
+  // create a new object for the updated contacted
+  const { name, email, phone } = body;
+  // reads the data 
+  let data = await fs.readFile(filePath);
+  // parses the data
+  data = JSON.parse(data);
+  // finds the contact to update
+  const contactId = data.findIndex(item => item.id === id);
+  // creates a new contact object by spreading the id, and adding the new info
+  data[contactId] = {...data[contactId], name, email, phone }; 
+  // writes the updated contact back to the contacts.json file 
+  await fs.writeFile(filePath, JSON.stringify(data));
+  // return the updated array of contacts
+  return data; 
+}
 
 module.exports = {
   getAllContacts,
@@ -49,5 +64,5 @@ module.exports = {
   getContactById,
   removeContact,
   addContact,
-  // updateContact,
+  updateContact,
 }

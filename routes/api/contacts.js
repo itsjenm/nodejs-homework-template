@@ -26,8 +26,6 @@ router.delete('/:id', ctrlWrapper(ctrl.removeContact));
 
 // @ PUT /api/contacts/:id
 
-router.put('/:id', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
+router.put('/:id', ctrlWrapper(ctrl.updateContact)); 
 
 module.exports = router;
