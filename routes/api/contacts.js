@@ -22,9 +22,7 @@ router.get('/:id', ctrlWrapper(ctrl.getContactById));
 
 // @ DELETE /api/contacts/:id
 
-router.delete('/:id', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
+router.delete('/:id', ctrlWrapper(ctrl.removeContact));
 
 // @ PUT /api/contacts/:id
 

@@ -5,7 +5,8 @@ const getAllContacts = async () => {
         const data = await contactsOperations.getAllContacts();
         return data;
     } catch (error) {
-        console.log(error.message)
+        console.log(error.message);
+        throw error;
     }
 }
 

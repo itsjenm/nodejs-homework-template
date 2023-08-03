@@ -11,7 +11,6 @@ const getAllContacts = async () => {
 }
 
 
-
 // const listContacts = async () => {}
 
 const getContactById = async (id) => {
@@ -21,7 +20,13 @@ const getContactById = async (id) => {
   return singleContact;
 }
 
-// const removeContact = async (contactId) => {}
+const removeContact = async (id) => {
+  const data = await fs.readFile(filePath);
+  const contacts = JSON.parse(data);
+  const newData = contacts.filter(item => item.id !== id);
+  await fs.writeFile(filePath, JSON.stringify(newData));
+  return newData;
+}
 
 const addContact = async (body) => {
   // Get the existing contacts by calling the 'getAllContacts' function.
@@ -42,7 +47,7 @@ module.exports = {
   getAllContacts,
   // listContacts,
   getContactById,
-  // removeContact,
+  removeContact,
   addContact,
   // updateContact,
 }
