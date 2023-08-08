@@ -60,8 +60,11 @@ const contactsController = {
         { $set: req.body },
         { new: true }
       );
-      if (req.body === '') {
-        res.status(400).json({ message: "missing field favorite"})
+      if (!favoriteContacts) {
+        return res.status(404).json({ message: "Contact not found" });
+      }
+      if (!req.body.favorite) {
+        return res.status(400).json({ message: "missing field favorite"})
       }
       res.json(favoriteContacts)
     } catch (error) {
