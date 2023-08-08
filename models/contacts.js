@@ -1,19 +1,25 @@
 // const fs = require('fs/promises')
+// model allows you to create a collection based on the schema
+const { Schema, model } = require("mongoose");
+const contactsSchema = new Schema({
+  name: {
+    type: String,
+    required: [true, "Set name for contact"],
+  },
+  email: {
+    type: String,
+  },
+  phone: {
+    type: String,
+  },
+  favorite: {
+    type: Boolean,
+    default: false, //defaults the favorite value to false
+  },
+}, { collection: 'contacts'});
 
-const listContacts = async () => {}
 
-const getContactById = async (contactId) => {}
+const Contacts = model('Contacts', contactsSchema)
 
-const removeContact = async (contactId) => {}
 
-const addContact = async (body) => {}
-
-const updateContact = async (contactId, body) => {}
-
-module.exports = {
-  listContacts,
-  getContactById,
-  removeContact,
-  addContact,
-  updateContact,
-}
+module.exports = Contacts;
