@@ -25,9 +25,19 @@ const usersController = {
       res.json(error);
     }
   },
-  async signup(req, res) {
+  async signup(req, res, next) {
     try {
       const { email, password } = req.body;
+      // check if the user exist
+      const userExist = await Users.findOne({ email: email });
+      if (userExist) {
+        return res.status(409).json({
+          status: "error",
+          code: 409,
+          message: "Email is already in use",
+          data: "Conflict",
+        });
+      }
       const hashed = await bcrypt.hash(password, 10);
       //   create a token and store in db
       const token = jwt.sign({ email }, process.env.JWT_SECRET, {
@@ -42,15 +52,23 @@ const usersController = {
         //data that verifies if they are in the application in this current session
         token: token,
       });
+
       // until the session times out, then the session resets
       // check if the user is authenticated using req.session
       // clears out data in the session if inactivity
       req.session.userToken = token;
+  
       console.log(req.session);
-      res.json({ token });
+      res.status(201).json({
+        token,
+        status: "success",
+        code: 201,
+        data: {
+          message: "Registration successful",
+        },
+      });
     } catch (err) {
-      console.log(err);
-      res.json(err);
+      next(err);
     }
   },
   async login(req, res) {
