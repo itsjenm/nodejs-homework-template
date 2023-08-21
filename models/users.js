@@ -34,6 +34,7 @@ usersSchema.methods.checkPassword = async function(loginPW) {
     return bcrypt.compare(loginPW, this.password);
 }
 
+
 const Users = model('user', usersSchema); 
 
 module.exports = Users; 

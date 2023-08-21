@@ -57,14 +57,14 @@ const usersController = {
       // check if the user is authenticated using req.session
       // clears out data in the session if inactivity
       req.session.userToken = token;
-  
+
       console.log(req.session);
       res.status(201).json({
-        token,
         status: "success",
         code: 201,
         data: {
           message: "Registration successful",
+          token,
         },
       });
     } catch (err) {
@@ -77,27 +77,43 @@ const usersController = {
       //   calls the database and looks for user
       const singleUser = await Users.findOne({ email: email });
       if (!singleUser) {
-        res.json({ message: "No user found in the database" });
+        res.status(400).json({
+          status: "error",
+          code: 400,
+          message: "No user found in the database",
+          data: "Bad request",
+        });
         return;
       }
       // bcrypt can be used to check if password checks out
       const validatingPW = await singleUser.checkPassword(password);
       if (!validatingPW) {
-        res.json({ message: "Wrong Password" });
+        res.status(400).json({
+          status: "error",
+          code: 400,
+          message: "Wrong Password",
+          data: "Bad request",
+        });
         return;
       }
       // to create a new token
       const token = jwt.sign({ email }, process.env.JWT_SECRET, {
         expiresIn: "1hr",
       });
-      // mongodb syntax to add the token to database (old way)
-      // user.token = token;
-      // await user.save();
+      // mongodb syntax to add the token to database * needed to save to db to retrieve
+      singleUser.token = token;
+      await singleUser.save();
 
       // this is the new way = make a new session token
       //   tells the user that we are authenticated and signed in
       req.session.userToken = token;
-      res.json({ token });
+      res.status(200).json({
+        status: "success",
+        code: 200,
+        data: {
+          token,
+        },
+      });
     } catch (err) {
       console.log(err);
       res.json(err);
@@ -110,6 +126,38 @@ const usersController = {
       });
     } else {
       res.json({ message: "You are already signed out!" });
+    }
+  },
+  async getCurrentUser(req, res, next) {
+    try {
+      if (!req.session.userToken) {
+        res.status(401).json({
+          status: "error",
+          code: 401,
+          message: "Not authorized",
+          data: "Unathorized",
+        });
+      }
+      
+      const user = await Users.findOne({ token: req.session.userToken});
+      
+      if (!user) {
+        return res.status(404).json({
+          status: "error",
+          code: 404,
+          message: "User not found",
+          data: "User not found",
+        });
+      }
+      res.json(user);
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({
+        status: 'error',
+        code: 500,
+        message: 'Internal server error',
+        data: 'An error occurred while fetching the user',
+      });
     }
   },
 };
