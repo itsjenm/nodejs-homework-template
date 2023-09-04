@@ -196,57 +196,60 @@ const contactsController = {
         },
       });
       // before we upload, lets rename
-      // 1. we target a user
+      // 1.req.params._id we target a user
 
       const user = await Users.findOne({
-        _id: "64e724b764ffa2392a7c5ef9",
+        _id: '64e27065fdb22b4d50c0ae70'
       });
       console.log(user.id);
 
       // chain with another function
       // 2. target picture
       upload.array("picture")(req, res, async function (err) {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ message: "Upload failed" });
+        }
         // rename picture to tempName
-        const { path: tempName } = req.file;
-        console.log(tempName);
+        const { path: tempName } = req.files[0]; //Use req.files instead of req.file for array upload
+        console.log("Temp Name:", tempName);
 
         // 3. make a new file name
-        const fileName = path.join(imagesPath, user.id) + ".jpg";
-        console.log(fileName);
+        const fileName = path.join(imagesPath, user.id + ".jpg");
+        console.log("New File Name:", fileName);
 
         // read the picture and set dimensions
-        Jimp.read(tempName)
-          .then((image) => {
-            // Do stuff with the image.
-            image.resize(250, 250);
-          })
-          .catch((err) => {
-            // Handle an exception.
-            console.log(err);
-          });
+        const image = await Jimp.read(tempName);
+        await image.resize(250, 250).write(fileName); //Resize and save the image
 
-        // 4. move the image over using fs library
-        await fs.rename(tempName, fileName);
+        // 4. delete the temporary uploaded file
+        await fs.unlink(tempName);
 
-        res.json(req.file);
+        return res.json({ message: "Upload successful" });
       });
     } catch (err) {
       console.log(err);
-      res.json(err);
+      res.status(500).json({ message: "Internal server error" });
     }
   },
   async updateFile(req, res) {
     try {
       const user = await Users.findOneAndUpdate(
-        { _id: req.params.id },
-        { $set: req.body },
+        // req.params.id - not working, so i inputed a user id
+        { _id: '64f52aa68ba0e2ac6238c6a8' }, 
+        { $set: { avatarURL: req.body.avatarURL } }, //update the avatarURL field only, not the entire req.body
         { new: true }
       );
 
-      res.json(user);
+      if (!user) {
+        // Handle the case where the user is not found
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      return res.json(user);
     } catch (err) {
       console.log(err);
-      res.json(err);
+      res.status(500).json({ message: "Internal server error" });
     }
   },
 };
