@@ -11,8 +11,11 @@ const Jimp = require("jimp");
 const uploadPath = path.join(process.cwd(), "tmp"); // checks/validation folder to see storage size and if it meets criteria
 const imagesPath = path.join(process.cwd(), "public/avatars"); // storing/resting place for the files
 
-// console.log(imagesPath);
-// console.log(uploadPath)
+// multer ships with storage engines memoryStorage or DiskStorage
+// memory storage engine stores the files in memory
+const storage = multer.memoryStorage();
+// tells multer where to upload the files.
+const upload = multer({ storage });
 
 const contactsController = {
   async getUsers(req, res) {
@@ -70,10 +73,9 @@ const contactsController = {
       const token = jwt.sign({ email }, process.env.JWT_SECRET, {
         expiresIn: "1hr",
       });
-      // user's id
-      const userId = await Users.owner;
+
       // generate a profile url based on email using gravatar
-      const profileUrl = gravatar.profile_url(email, { format: "jpg" });
+      const avatarURL = "https:" + gravatar.url(email);
       //   create the user to target table and columns they are supposed to be in.
       //   .create adds to the db
       const newUser = await Users.create({
@@ -82,16 +84,15 @@ const contactsController = {
         password: hashed,
         //data that verifies if they are in the application in this current session
         token: token,
-        avatarURL: profileUrl,
-        _id: userId,
+        avatarURL: avatarURL,
       });
 
       // until the session times out, then the session resets
       // check if the user is authenticated using req.session
       // clears out data in the session if inactivity
       req.session.userToken = token;
+      // console.log(req.session);
 
-      console.log(req.session);
       res.status(201).json({
         status: "success",
         code: 201,
@@ -176,80 +177,146 @@ const contactsController = {
       res.json(err);
     }
   },
+
+  // This is a middleware that uses the 'upload' multer instance to handle a single file upload with the field name "avatar".
+  avatarUpload: upload.single("avatar"),
+
   async uploadFile(req, res) {
     try {
-      // create a storage
-      const storage = multer.diskStorage({
-        // where do we want the uploaded files to be at
-        // destination/multer needs a callback function = cb
-        destination: (req, file, cb) => {
-          cb(null, uploadPath);
-        },
-        filename: (req, file, cb) => {
-          cb(null, file.originalname);
-        },
+      const { email } = req.body; // extract the mail from the request body
+      // create a storage = old way
+      // const storage = multer.diskStorage({
+      //   // where do we want the uploaded files to be at
+      //   // destination/multer needs a callback function = cb
+      //   destination: (req, file, cb) => {
+      //     cb(null, uploadPath);
+      //   },
+      //   filename: (req, file, cb) => {
+      //     cb(null, file.originalname);
+      //   },
+      // });
+
+      // get the upload file buffer
+      const uploadedFileBuffer = req.file.buffer;
+
+      // create a unique filename based on the mail and timestamp
+      const uniqueFileName = `${email}-${Date.now()}.jpg`;
+
+      // construct the path to the avatars directory
+      const avatarPath = path.join(process.cwd(), "public", "avatars");
+
+      // Create a path for the temporary file in the tmp folder
+      const tmpFilePath = path.join(uploadPath, uniqueFileName);
+
+      // Write the binary data to the temporary file
+      await fs.writeFile(tmpFilePath, uploadedFileBuffer);
+
+      // Resize and rename the image using Jimp
+      const resizedFilePath = path.join(avatarPath, uniqueFileName);
+      const jimpImage = await Jimp.read(tmpFilePath);
+      await jimpImage.resize(250, 250); // Resize the image
+      await jimpImage.writeAsync(resizedFilePath);
+
+      // Find the user based on their email and update their avatarURL field
+      const updatedUser = await Users.findOneAndUpdate(
+        { email: email },
+        { avatarURL: `/avatars/${uniqueFileName}` }, /// Update the avatarURL field with the unique filename
+        { new: true } //Return the updated user object
+      );
+
+      // Send a JSON response indicating successful avatar upload along with the updated user object
+      res.json({
+        message: "Avatar uploaded successfully",
+        user: updatedUser,
       });
-      const upload = multer({
-        storage: storage,
-        limits: {
-          fileSize: 1048576, // means 1MB
-        },
-      });
-      // before we upload, lets rename
-      // 1.req.params._id we target a user
 
-      const user = await Users.findOne({
-        _id: '64e27065fdb22b4d50c0ae70'
-      });
-      console.log(user.id);
-
-      // chain with another function
-      // 2. target picture
-      upload.array("picture")(req, res, async function (err) {
-        if (err) {
-          console.error(err);
-          return res.status(500).json({ message: "Upload failed" });
-        }
-        // rename picture to tempName
-        const { path: tempName } = req.files[0]; //Use req.files instead of req.file for array upload
-        console.log("Temp Name:", tempName);
-
-        // 3. make a new file name
-        const fileName = path.join(imagesPath, user.id + ".jpg");
-        console.log("New File Name:", fileName);
-
-        // read the picture and set dimensions
-        const image = await Jimp.read(tempName);
-        await image.resize(250, 250).write(fileName); //Resize and save the image
-
-        // 4. delete the temporary uploaded file
-        await fs.unlink(tempName);
-
-        return res.json({ message: "Upload successful" });
-      });
+      // Delete the temporary file from the tmp folder
+      await fs.unlink(tmpFilePath);
     } catch (err) {
       console.log(err);
       res.status(500).json({ message: "Internal server error" });
     }
   },
+
   async updateFile(req, res) {
     try {
-      const user = await Users.findOneAndUpdate(
-        // req.params.id - not working, so i inputed a user id
-        { _id: '64f52aa68ba0e2ac6238c6a8' }, 
-        { $set: { avatarURL: req.body.avatarURL } }, //update the avatarURL field only, not the entire req.body
-        { new: true }
+      const userEmail = req.body.email;
+
+      // find the user in the database based on their email
+      const user = await Users.findOne(
+        //
+        { email: userEmail }
       );
 
       if (!user) {
         // Handle the case where the user is not found
         return res.status(404).json({ message: "User not found" });
       }
-      
-      return res.json(user);
+      // Handle the previous avatar (delete the old one if exists)
+      if (user.avatarURL) {
+        const previousAvatarPath = path.join(
+          process.cwd(),
+          "public",
+          user.avatarURL
+        );
+
+        // Check if the previous avatar file exists before attempting to delete it
+        await fs.access(previousAvatarPath);
+
+        // Delete the previous avatar image
+        await fs.unlink(previousAvatarPath);
+      }
+
+      // Get the uploaded file buffer
+      const uploadedFileBuffer = req.file.buffer;
+
+      // Create a unique filename based on the user's email and timestamp
+      const uniqueFileName = `${userEmail}-${Date.now()}.jpg`;
+
+      // Construct the path to the avatars directory
+      const avatarPath = path.join(process.cwd(), "public", "avatars");
+
+      // Create a path for the new avatar file
+      const newAvatarFilePath = path.join(avatarPath, uniqueFileName);
+
+      // Write the binary data to the new avatar file
+      await fs.writeFile(newAvatarFilePath, uploadedFileBuffer);
+
+      // Resize the new avatar image if necessary
+      const jimpImage = await Jimp.read(newAvatarFilePath);
+      await jimpImage.resize(250, 250); // Resize the image to your desired dimensions
+      await jimpImage.writeAsync(newAvatarFilePath);
+
+      // Update the user's avatarURL field in the database
+      user.avatarURL = `/avatars/${uniqueFileName}`;
+      await user.save();
+
+      return res.json({
+        message: "Avatar updated successfully",
+        avatarURL: user.avatarURL,
+      });
     } catch (err) {
       console.log(err);
       res.status(500).json({ message: "Internal server error" });
+    }
+  },
+  async startDB() {
+    try {
+      db.once("open", () => {
+        console.log("Database connected");
+      });
+    } catch (err) {
+      return err;
+    }
+  },
+  closeDB() {
+    db.close();
+  },
+  async emptyDB() {
+    try {
+      await Users.deleteMany({});
+    } catch (err) {
+      return err;
     }
   },
 };
