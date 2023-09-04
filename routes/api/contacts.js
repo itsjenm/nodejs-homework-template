@@ -1,25 +1,8 @@
-const express = require('express')
+const express = require("express");
+const router = express.Router();
+const { getUsersByToken } = require("../../controllers/contactsController");
 
-const router = express.Router()
+//Create a GET /users/verify/:verificationToken, endpoint, where we will search for a user in the User model by the verificationToken parameter.
+router.route("/users/verify/:verificationToken").get(getUsersByToken);
 
-router.get('/', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
-
-router.get('/:contactId', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
-
-router.post('/', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
-
-router.delete('/:contactId', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
-
-router.put('/:contactId', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
-
-module.exports = router
+module.exports = router;
