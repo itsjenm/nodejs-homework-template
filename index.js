@@ -5,7 +5,7 @@ require("dotenv").config();
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "jmartinez414@gmail.com",
+    user: process.env.EMAIL,
     pass: process.env.EMAIL_APIKEY,
   },
   // configuration
@@ -17,7 +17,7 @@ const transporter = nodemailer.createTransport({
 // put it inside a function
 function sendMessage(email) {
   const message = {
-    from: "jmartinez414@gmail.com",
+    from: process.env.EMAIL,
     to: email,
     subject: "Learning nodemailer",
     text: "Hey, this is cool!",
