@@ -1,6 +1,8 @@
-const express = require('express')
-const logger = require('morgan')
-const cors = require('cors')
+const express = require('express');
+const logger = require('morgan');
+const cors = require('cors');
+const session = require('express-session');
+require('dotenv').config();
 
 const contactsRouter = require('./routes/api/contacts')
 
@@ -8,8 +10,8 @@ const app = express()
 
 const formatsLogger = app.get('env') === 'development' ? 'dev' : 'short'
 
-app.use(logger(formatsLogger))
-app.use(cors())
+app.use(logger(formatsLogger));
+app.use(cors());
 app.use(express.json());
 
 // all the options for the current session we are using
@@ -26,7 +28,9 @@ const sesh = {
   saveUninitialized: true, 
 }
 
-app.use('/api', contactsRouter)
+app.use(session(sesh));
+
+app.use('/api', contactsRouter);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Not found' })
